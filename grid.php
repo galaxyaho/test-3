@@ -34,6 +34,7 @@ $flash = get_flash_message();
     <nav class="top-nav">
         <div class="nav-links">
             <a href="advanced.php" class="nav-button">Advanced Booking</a>
+            <a href="admin/auto_checkout_settings.php" class="nav-button">Auto Checkout</a>
         </div>
         <a href="/" class="nav-brand">L.P.S.T Bookings</a>
         <div class="nav-links">
@@ -51,6 +52,30 @@ $flash = get_flash_message();
         <?php endif; ?>
 
         <h2>Room & Hall Status</h2>
+        
+        <!-- Auto Checkout Notice -->
+        <?php
+        // Get auto checkout settings
+        $stmt = $pdo->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('auto_checkout_enabled', 'auto_checkout_time')");
+        $autoSettings = [];
+        while ($row = $stmt->fetch()) {
+            $autoSettings[$row['setting_key']] = $row['setting_value'];
+        }
+        $autoEnabled = ($autoSettings['auto_checkout_enabled'] ?? '1') === '1';
+        $autoTime = $autoSettings['auto_checkout_time'] ?? '10:00';
+        ?>
+        
+        <?php if ($autoEnabled): ?>
+            <div style="background: linear-gradient(45deg, #28a745, #20c997); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-weight: bold; box-shadow: 0 4px 15px rgba(40,167,69,0.3);">
+                🕙 DAILY AUTO CHECKOUT ACTIVE - All active bookings will be automatically checked out at <?= $autoTime ?> daily
+                <br><small style="opacity: 0.9;">Next auto checkout: Tomorrow at <?= $autoTime ?></small>
+            </div>
+        <?php else: ?>
+            <div style="background: linear-gradient(45deg, #dc3545, #c82333); color: white; padding: 15px; border-radius: 10px; margin-bottom: 20px; text-align: center; font-weight: bold;">
+                ⚠️ AUTO CHECKOUT DISABLED - Manual checkout required for all bookings
+                <br><small style="opacity: 0.9;"><a href="admin/auto_checkout_settings.php" style="color: white; text-decoration: underline;">Enable Auto Checkout</a></small>
+            </div>
+        <?php endif; ?>
         
         <div class="resources-grid">
             <?php foreach ($resources as $resource): ?>
@@ -71,6 +96,9 @@ $flash = get_flash_message();
                 } elseif ($hasAdvancedBooking) {
                     $boxClass = 'advanced-booked';
                 }
+                
+                // Add auto checkout info to each resource
+                $autoCheckoutNotice = $autoEnabled ? "Daily auto checkout at {$autoTime}" : "Auto checkout disabled";
                 ?>
                 
                 <div class="resource-box <?= $boxClass ?>" data-resource-id="<?= $resource['id'] ?>" onclick="toggleResourceBox(this)">
@@ -135,6 +163,11 @@ $flash = get_flash_message();
                     
                     <div class="status-badge status-<?= $isOccupied ? strtolower($booking['status']) : 'vacant' ?>">
                         <?= $isOccupied ? $booking['status'] : 'VACANT' ?>
+                    </div>
+                    
+                    <!-- Auto Checkout Notice -->
+                    <div style="font-size: 12px; color: rgba(255,255,255,0.8); margin-top: 0.5rem; text-align: center;">
+                        <?= $autoCheckoutNotice ?>
                     </div>
                     
                     <div class="action-buttons">

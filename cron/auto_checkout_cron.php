@@ -1,10 +1,17 @@
 <?php
 /**
- * Auto Checkout Cron Job - Fixed for Hostinger
+ * Auto Checkout Cron Job for L.P.S.T Hotel Booking System
  * This file should be executed by cron every minute or every 5 minutes
- * Cron command: * * * * * /usr/bin/php /path/to/your/project/cron/auto_checkout_cron.php
- * Or for every 5 minutes: */5 * * * * /usr/bin/php /path/to/your/project/cron/auto_checkout_cron.php
+ * 
+ * Cron command for Hostinger:
+ * */5 * * * * /usr/bin/php /home/u261459251/domains/soft.galaxytribes.in/public_html/cron/auto_checkout_cron.php
+ * 
+ * Or every minute for more precise timing:
+ * * * * * * /usr/bin/php /home/u261459251/domains/soft.galaxytribes.in/public_html/cron/auto_checkout_cron.php
  */
+
+// Set timezone first
+date_default_timezone_set('Asia/Kolkata');
 
 // Allow manual testing via browser
 if (isset($_GET['manual_run']) || isset($_GET['test'])) {
@@ -25,6 +32,7 @@ try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $username, $password);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
+    $pdo->exec("SET time_zone = '+05:30'");
 } catch(PDOException $e) {
     $error = "Database connection failed: " . $e->getMessage();
     error_log($error);
@@ -62,10 +70,10 @@ try {
     } else {
         echo "Auto checkout executed: " . $result['status'] . "\n";
         if (isset($result['checked_out'])) {
-            echo "Checked out: " . $result['checked_out'] . " rooms\n";
+            echo "Checked out: " . $result['checked_out'] . " bookings\n";
         }
         if (isset($result['failed'])) {
-            echo "Failed: " . $result['failed'] . " rooms\n";
+            echo "Failed: " . $result['failed'] . " bookings\n";
         }
     }
     

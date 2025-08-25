@@ -140,6 +140,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 break;
+                
+            case 'update_auto_checkout':
+                $autoCheckoutTime = $_POST['auto_checkout_time'] ?? '10:00';
+                $autoCheckoutEnabled = isset($_POST['auto_checkout_enabled']) ? '1' : '0';
+                
+                try {
+                    $stmt = $pdo->prepare("
+                        INSERT INTO system_settings (setting_key, setting_value) 
+                        VALUES ('auto_checkout_time', ?), ('auto_checkout_enabled', ?)
+                        ON DUPLICATE KEY UPDATE setting_value = VALUES(setting_value)
+                    ");
+                    $stmt->execute([$autoCheckoutTime, $autoCheckoutEnabled]);
+                    redirect_with_message('settings.php', 'Auto checkout settings updated successfully!', 'success');
+                } catch (Exception $e) {
+                    $error = 'Failed to update auto checkout settings.';
+                }
+                break;
         }
     }
 }
@@ -300,6 +317,51 @@ $flash = get_flash_message();
                 </div>
                 <button type="submit" class="btn btn-primary">Update UPI Settings</button>
             </form>
+        </div>
+        
+        <!-- Auto Checkout Settings -->
+        <div class="form-container">
+            <h3>Auto Checkout Configuration</h3>
+            <?php
+            // Get auto checkout settings
+            $stmt = $pdo->query("SELECT setting_key, setting_value FROM system_settings WHERE setting_key IN ('auto_checkout_enabled', 'auto_checkout_time')");
+            $autoSettings = [];
+            while ($row = $stmt->fetch()) {
+                $autoSettings[$row['setting_key']] = $row['setting_value'];
+            }
+            $autoEnabled = ($autoSettings['auto_checkout_enabled'] ?? '1') === '1';
+            $autoTime = $autoSettings['auto_checkout_time'] ?? '10:00';
+            ?>
+            
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="<?= generate_csrf_token() ?>">
+                <input type="hidden" name="action" value="update_auto_checkout">
+                
+                <div class="form-group">
+                    <label class="form-label">
+                        <input type="checkbox" name="auto_checkout_enabled" <?= $autoEnabled ? 'checked' : '' ?>>
+                        Enable Daily Auto Checkout
+                    </label>
+                    <small style="color: var(--dark-color);">When enabled, all active bookings will be automatically checked out daily</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="auto_checkout_time" class="form-label">Daily Checkout Time</label>
+                    <input type="time" id="auto_checkout_time" name="auto_checkout_time" class="form-control" 
+                           value="<?= htmlspecialchars($autoTime) ?>" required>
+                    <small style="color: var(--dark-color);">Time when auto checkout will run daily (24-hour format)</small>
+                </div>
+                
+                <button type="submit" class="btn btn-primary">Update Auto Checkout Settings</button>
+            </form>
+            
+            <div style="margin-top: 2rem; padding: 1rem; background: rgba(40, 167, 69, 0.1); border-radius: 8px;">
+                <h4 style="color: var(--success-color);">Current Status:</h4>
+                <p><strong>Auto Checkout:</strong> <?= $autoEnabled ? '✅ ENABLED' : '❌ DISABLED' ?></p>
+                <p><strong>Daily Time:</strong> <?= $autoTime ?></p>
+                <p><strong>Next Run:</strong> Tomorrow at <?= $autoTime ?></p>
+                <a href="../admin/auto_checkout_settings.php" class="btn btn-outline">View Detailed Settings</a>
+            </div>
         </div>
         
         <!-- Password Change -->
